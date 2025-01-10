@@ -1,31 +1,32 @@
 {
-  "name": "hotel-reviews",
-  "displayName": "Hotel reviews",
-  "version": "0.0.1",
-  "description": "A basic Plasmo extension.",
-  "author": "Hritik",
+  "name": "roovo-ai",
+  "displayName": "Roovo AI",
+  "version": "0.0.3",
+  "description": "Roovo AI is your personal travel assistant, designed to revolutionize the way you book hotels and resorts.",
+  "author": "@hritik2002",
   "scripts": {
     "dev": "plasmo dev",
-    "build": "plasmo build",
-    "package": "plasmo package"
+    "build": "plasmo build"
   },
   "dependencies": {
-    "plasmo": "0.89.4",
+    "axios": "^1.7.9",
+    "lucide-react": "0.263.1",
+    "plasmo": "0.84.0",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "@ianvs/prettier-plugin-sort-imports": "4.1.1",
-    "@types/chrome": "0.0.258",
-    "@types/node": "20.11.5",
-    "@types/react": "18.2.48",
-    "@types/react-dom": "18.2.18",
-    "prettier": "3.2.4",
-    "typescript": "5.3.3"
+    "@types/react": "18.2.0",
+    "@types/react-dom": "18.2.0",
+    "autoprefixer": "10.4.0",
+    "postcss": "8.4.0",
+    "tailwindcss": "3.3.0",
+    "typescript": "*"
   },
   "manifest": {
     "host_permissions": [
-      "https://*/*"
-    ]
+      "https://www.booking.com/hotel/*"
+    ],
+    "permissions": []
   }
 }
