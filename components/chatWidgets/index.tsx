@@ -64,9 +64,8 @@ const ChatWidget = () => {
         suggestions: [currentQuestion],
       };
 
-      const result = JSON.parse(data.response);
-
       if (data.isHotelExist) {
+        const result = JSON.parse(data.response);
         botMessage.text = result.answer;
         botMessage.suggestions = result.suggestions;
       } else if (data.scrapingStatus) {
