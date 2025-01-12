@@ -1,7 +1,7 @@
 {
   "name": "roovo-ai",
   "displayName": "Roovo AI",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Roovo AI is your personal travel assistant, designed to revolutionize the way you book hotels and resorts.",
   "author": "@hritik2002",
   "scripts": {
