@@ -18,32 +18,84 @@ const ChatWidget = () => {
   const [messages, setMessages] = useState([initMessage]);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
   let pageUrl = window.location.href.split(".html")[0];
   pageUrl = pageUrl + ".html";
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const getHotelName = (url: string) => {
-    const arr = url.split(".html")[0].split("/");
-    const len = arr.length;
+  const getHotelId = (url: string) => {
+    const hotelId = url.split(".html")[0] + ".html";
 
-    return arr[len - 1].split(".")[0];
+    return hotelId;
   };
-
-  const getPrompt = ({ hotelName, question }) => {
-    return `For the hotel ${hotelName}, answer the following question, ${question}.`;
-  };
-
-  const hotelName = getHotelName(window.location.href);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
+    if (!window) {
+      return;
+    }
+
+    handleGetChatHistory();
+  }, []);
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleGetChatHistory = async () => {
+    try {
+      const hotelId = getHotelId(window.location.href);
+      setIsLoading(true);
+      console.log("handleGetChatHistory", { hotelId });
+      const response = await axios.get(
+        `https://ai-reviews-be.vercel.app/api/get-chat/?hotelId=${hotelId}`
+      );
+
+      const { data = {} } = response;
+      console.log(data);
+      const chatHistory = (data.chat_history ?? []).map(
+        ({ content, role, timestamp }) => {
+          let suggestions = [],
+            text = "";
+
+          try {
+            if (role === "assistant") {
+              const result = JSON.parse(content);
+
+              text = result.answer;
+              suggestions = result.suggestions;
+            } else {
+              text = content;
+              suggestions = [];
+            }
+          } catch {
+            text = "";
+            suggestions = [];
+          }
+
+          return {
+            text,
+            sender: role !== "assistant" ? "user" : role,
+            timestamp,
+            suggestions,
+          };
+        }
+      );
+
+      setIsLoading(false);
+      setMessages((prev) => [initMessage, ...chatHistory]);
+    } catch (error) {
+      setIsLoading(false);
+      return {
+        messages: [],
+      };
+    }
+  };
 
   const handleAskQuestion = async ({ prompt, url, currentQuestion = "" }) => {
     try {
@@ -101,9 +153,8 @@ const ChatWidget = () => {
     setMessages((prev) => [...prev, userMessage]);
     setIsTyping(true);
 
-    const prompt = getPrompt({ hotelName, question: suggestion });
     handleAskQuestion({
-      prompt,
+      prompt: suggestion,
       url: pageUrl,
       currentQuestion: suggestion,
     });
@@ -123,10 +174,9 @@ const ChatWidget = () => {
     const currentQuestion = inputMessage;
     setInputMessage("");
     setIsTyping(true);
-    const prompt = getPrompt({ hotelName, question: inputMessage });
 
     handleAskQuestion({
-      prompt,
+      prompt: currentQuestion,
       url: pageUrl,
       currentQuestion,
     });
@@ -202,6 +252,7 @@ const ChatWidget = () => {
                 )}
               </div>
             ))}
+            {isLoading && <LoadingSpinner />}
             {isTyping && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 text-gray-800 p-3 rounded-lg">
@@ -236,6 +287,14 @@ const ChatWidget = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+const LoadingSpinner = () => {
+  return (
+    <div className="flex justify-center items-center">
+      <p className="text-black">loading...</p>
     </div>
   );
 };
