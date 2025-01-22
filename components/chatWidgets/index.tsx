@@ -1,9 +1,10 @@
 import { MessageCircle, Send, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
+import ProfileImage from "~components/common/profilePic";
 
 const initMessage = {
-  text: "Hi there! 👋 I am Roovo AI, here to help you out with this hotel. Feel free to ask me anything!",
+  text: "Hi there! 👋 I am Safarmonk, here to help you out with this hotel. Feel free to ask me anything!",
   sender: "bot",
   timestamp: new Date().toISOString(),
   suggestions: [
@@ -40,60 +41,55 @@ const ChatWidget = () => {
       return;
     }
 
-    handleGetChatHistory();
+    fetchHotelChatHistory();
   }, []);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const handleGetChatHistory = async () => {
+  const fetchHotelChatHistory = async () => {
     try {
       const hotelId = getHotelId(window.location.href);
       setIsLoading(true);
-      console.log("handleGetChatHistory", { hotelId });
-      const response = await axios.get(
-        `https://ai-reviews-be.vercel.app/api/get-chat/?hotelId=${hotelId}`
-      );
 
-      const { data = {} } = response;
-      console.log(data);
-      const chatHistory = (data.chat_history ?? []).map(
-        ({ content, role, timestamp }) => {
-          let suggestions = [],
-            text = "";
+      const [addHotelResponse, chatResponse] = await Promise.allSettled([
+        axios.get(
+          `https://ai-reviews-be.vercel.app/api/add-hotel/?url=${hotelId}`
+        ),
+        axios.get(
+          `https://ai-reviews-be.vercel.app/api/get-chat/?hotelId=${hotelId}`
+        ),
+      ]);
 
-          try {
-            if (role === "assistant") {
-              const result = JSON.parse(content);
-
-              text = result.answer;
-              suggestions = result.suggestions;
-            } else {
-              text = content;
-              suggestions = [];
-            }
-          } catch {
-            text = "";
-            suggestions = [];
-          }
-
-          return {
-            text,
-            sender: role !== "assistant" ? "user" : role,
-            timestamp,
-            suggestions,
-          };
-        }
-      );
+      const chatHistory =
+        chatResponse.status === "fulfilled"
+          ? (chatResponse.value.data.chat_history ?? []).map(
+              ({ content, role, timestamp }) => {
+                try {
+                  if (role === "assistant") {
+                    const { answer: text, suggestions = [] } =
+                      JSON.parse(content);
+                    return { text, sender: role, timestamp, suggestions };
+                  }
+                  return {
+                    text: content,
+                    sender: "user",
+                    timestamp,
+                    suggestions: [],
+                  };
+                } catch {
+                  return { text: "", sender: role, timestamp, suggestions: [] };
+                }
+              }
+            )
+          : [];
 
       setIsLoading(false);
       setMessages((prev) => [initMessage, ...chatHistory]);
     } catch (error) {
       setIsLoading(false);
-      return {
-        messages: [],
-      };
+      return { messages: [] };
     }
   };
 
@@ -194,21 +190,13 @@ const ChatWidget = () => {
         </button>
       )}
 
-      {/* Chat Interface */}
       {isOpen && (
         <div className="bg-white rounded-xl shadow-xl h-[70dvh] min-h-[70dvh] flex flex-col sticky bottom-16 right-16 max-h-screen border border-gray-200 w-[40dvw] max-w-lg">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center">
-              {/* <img
-                src="https://res.cloudinary.com/dnqfxuxsm/image/upload/v1736488223/Screenshot_2025-01-10_at_11.17.16_AM_jeb0xs.png"
-                alt="RoovoAI"
-                className="w-8 h-8 mr-2"
-              /> */}
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold">R</span>
-              </div>
-              <h3 className="ml-3 font-semibold">RoovoAI</h3>
+              <ProfileImage />
+              <h3 className="ml-3 font-semibold">Safarmonk</h3>
             </div>
             <button
               onClick={() => setIsOpen(false)}
