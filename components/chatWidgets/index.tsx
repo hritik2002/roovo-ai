@@ -20,6 +20,7 @@ const ChatWidget = () => {
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [visibleSuggestionsIndex, setVisibleSuggestionsIndex] = useState(0);
   const messagesEndRef = useRef(null);
   let pageUrl = window.location.href.split(".html")[0];
   pageUrl = pageUrl + ".html";
@@ -62,14 +63,22 @@ const ChatWidget = () => {
         ),
       ]);
 
+      let suggestionsLastIndex = 0;
       const chatHistory =
         chatResponse.status === "fulfilled"
           ? (chatResponse.value.data.chat_history ?? []).map(
-              ({ content, role, timestamp }) => {
+              ({ content, role, timestamp }, index) => {
                 try {
                   if (role === "assistant") {
                     const { answer: text, suggestions = [] } =
                       JSON.parse(content);
+
+                    if (suggestions?.length) {
+                      suggestionsLastIndex = Math.max(
+                        index + 1,
+                        suggestionsLastIndex
+                      );
+                    }
                     return { text, sender: role, timestamp, suggestions };
                   }
                   return {
@@ -86,12 +95,15 @@ const ChatWidget = () => {
           : [];
 
       setIsLoading(false);
-      setMessages((prev) => [initMessage, ...chatHistory]);
+      setVisibleSuggestionsIndex(suggestionsLastIndex);
+      setMessages(() => [initMessage, ...chatHistory]);
     } catch (error) {
       setIsLoading(false);
       return { messages: [] };
     }
   };
+
+  console.log(messages);
 
   const handleAskQuestion = async ({ prompt, url, currentQuestion = "" }) => {
     try {
@@ -116,6 +128,9 @@ const ChatWidget = () => {
         const result = JSON.parse(data.response);
         botMessage.text = result.answer;
         botMessage.suggestions = result.suggestions;
+        if (botMessage.suggestions.length) {
+          setVisibleSuggestionsIndex(messages.length + 1);
+        }
       } else if (data.scrapingStatus) {
         botMessage.text =
           "We are still working on it. Please check back after 2 minutes.";
@@ -178,20 +193,26 @@ const ChatWidget = () => {
     });
   };
 
+  const handleCopy = (message) => {
+    navigator.clipboard.writeText(message.text).catch((err) => {
+      console.error("Failed to copy text: ", err);
+    });
+  };
+
   return (
     <div className="fixed bottom-16 right-16 z-50">
       {/* Chat Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-4 shadow-lg sticky bottom-16 right-16"
+          className="bg-[#0e131f] hover:bg-[#0e131fab] text-white rounded-full p-4 shadow-lg sticky bottom-16 right-16"
         >
           <MessageCircle className="w-6 h-6" />
         </button>
       )}
 
       {isOpen && (
-        <div className="bg-white rounded-xl shadow-xl h-[70dvh] min-h-[70dvh] flex flex-col sticky bottom-16 right-16 max-h-screen border border-gray-200 w-[40dvw] max-w-lg">
+        <div className="bg-white rounded-xl shadow-xl h-[70dvh] min-h-[70dvh] flex flex-col sticky bottom-16 right-16 max-h-screen border border-gray-200 w-[40dvw] max-w-lg chat-widget">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center">
@@ -211,27 +232,30 @@ const ChatWidget = () => {
             {messages.map((message, index) => (
               <div
                 key={index}
-                className={`flex flex-col ${
+                className={`flex flex-col relative ${
                   message.sender === "user" ? "items-end" : "items-start"
                 }`}
               >
                 <div
+                  onClick={() => {
+                    handleCopy(message);
+                  }}
                   className={`max-w-[80%] w-max p-3 rounded-lg ${
                     message.sender === "user"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-100 text-gray-800"
+                      ? "bg-[#0e131f] text-white user-message"
+                      : "bg-[#FFE5D1] text-gray-800 assistant-message"
                   }`}
                 >
                   {message.text}
                 </div>
 
-                {message.suggestions && (
+                {message.suggestions && visibleSuggestionsIndex === index && (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {message.suggestions.map((suggestion, idx) => (
                       <button
                         key={idx}
                         onClick={() => handleSuggestionClick(suggestion)}
-                        className="bg-white border border-blue-500 text-blue-500 px-4 py-2 rounded-full text-sm hover:bg-blue-50 transition-colors"
+                        className="bg-white border border-[#0e131f] text-white px-4 py-2 rounded-full text-sm hover:bg-[#0e131f] transition-colors suggestion-button"
                       >
                         {suggestion}
                       </button>
@@ -243,7 +267,7 @@ const ChatWidget = () => {
             {isLoading && <LoadingSpinner />}
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 text-gray-800 p-3 rounded-lg">
+                <div className="bg-[#FFE5D1] text-gray-800 p-3 rounded-lg">
                   Searching for answers...
                 </div>
               </div>
@@ -258,15 +282,21 @@ const ChatWidget = () => {
                 ref={textareaRef}
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
                 placeholder="Type your message..."
                 rows={1}
-                className="w-full pr-10 py-2 px-3 border rounded-lg resize-none min-h-[40px] max-h-[200px] overflow-y-auto focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                className="w-full pr-10 py-2 px-3 border rounded-lg resize-none min-h-[40px] max-h-[200px] overflow-y-auto focus:outline-none focus:border-[#0e131f] focus:ring-1 focus:ring-[#0e131f] transition-all"
                 style={{ lineHeight: "1.5" }}
               />
               <div className="flex flex-col justify-center align-center">
                 <button
                   onClick={handleSendMessage}
-                  className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-2 h-[2.5rem] flex items-center justify-center"
+                  className="px-4 py-2 h-[2.5rem] flex items-center justify-center send-button"
                 >
                   <Send className="w-5 h-5" />
                 </button>
