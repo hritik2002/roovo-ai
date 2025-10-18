@@ -2,6 +2,8 @@
 
 Safarmonk is a Chrome extension that uses AI to simplify how travelers discover and evaluate hotels. Instead of scrolling through hundreds of conflicting reviews, Safarmonk provides concise, reliable insights directly within your browser.
 
+[Link to Chrome Extension](https://chromewebstore.google.com/detail/safarmonk/ooodhdmbhgcfpedeiigaijglpapmhbfh)
+
 ## Overview
 
 Safarmonk analyzes hotel details and user reviews in real time to help users make informed booking decisions. It focuses on aspects that matter most — safety, amenities, cuisines, and overall experience — and delivers summarized insights without requiring users to leave the booking page.
